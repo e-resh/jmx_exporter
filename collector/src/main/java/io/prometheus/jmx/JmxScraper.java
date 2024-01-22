@@ -212,42 +212,25 @@ class JmxScraper {
             return;
         }
 
-        for (Object object : attributes) {
-            if (object instanceof Attribute) {
-                Attribute attribute = (Attribute) object;
-                String attributeName = attribute.getName();
-                if (mBeanName.toString().equals("java.lang:type=Runtime")
-                        && (attributeName.equalsIgnoreCase("SystemProperties")
-                                || attributeName.equalsIgnoreCase("ClassPath")
-                                || attributeName.equalsIgnoreCase("BootClassPath")
-                                || attributeName.equalsIgnoreCase("LibraryPath"))) {
-                    // Skip this attributes for the "java.lang:type=Runtime" MBean because
-                    // getting the values is expensive and the values are ultimately ignored
-                    continue;
-                } else if (mBeanName.toString().equals("jdk.management.jfr:type=FlightRecorder")) {
-                    // Skip the FlightRecorderMXBean
-                    continue;
-                }
-
-                MBeanAttributeInfo mBeanAttributeInfo =
-                        name2MBeanAttributeInfo.get(attribute.getName());
-                LOGGER.log(FINE, "%s_%s process", mBeanName, mBeanAttributeInfo.getName());
-                processBeanValue(
-                        mBeanName,
-                        mBeanName.getDomain(),
-                        jmxMBeanPropertyCache.getKeyPropertyList(mBeanName),
-                        new LinkedList<>(),
-                        mBeanAttributeInfo.getName(),
-                        mBeanAttributeInfo.getType(),
-                        mBeanAttributeInfo.getDescription(),
-                        attribute.getValue());
-            } else {
-                LOGGER.log(
-                        FINE,
-                        "%s object [%s] isn't an instance javax.management.Attribute, skipping",
-                        mBeanName,
-                        object.getClass().getName());
+        for (int i = 0; i < attributes.size(); i++) {
+            Object value = attributes.get(i);
+            boolean isMxAttribute = value instanceof Attribute;
+            if (isMxAttribute) {
+                value = ((Attribute) (value)).getValue();
             }
+
+            MBeanAttributeInfo attr = mBeanAttributeInfos[i];
+            LOGGER.log(FINE, "%s_%s process", mBeanName, attr.getName());
+            // logScrape(mbeanName, attr, "process");
+            processBeanValue(
+                    mBeanName,
+                    mBeanName.getDomain(),
+                    jmxMBeanPropertyCache.getKeyPropertyList(mBeanName),
+                    new LinkedList<>(),
+                    attr.getName(),
+                    attr.getType(),
+                    attr.getDescription(),
+                    value);
         }
     }
 
